@@ -64,7 +64,7 @@ fn main() -> anyhow::Result<()> {
 
 			let header = header.to_str().context(".git/objects file header isn't valid UTF-8")?;
 
-			let Some((size)) = header.strip_prefix("blob ") else {
+			let Some((kind, size)) = header.split_once(' ') else {
 				anyhow::bail!(
                     ".git/objects file header did not start with a known type: '{header}'"
                 );
