@@ -69,6 +69,11 @@ fn main() -> anyhow::Result<()> {
                     ".git/objects file header did not start with a known type: '{header}'"
                 );
 			};
+			let kind = match kind {
+				"blob" => Kind::Blob,
+				_ => anyhow::bail!("we do not yet know how to print a '{kind}'"),
+			};
+
 
 			let size = size.parse::<usize>().context(".git/objects file header has invalid size: {size}")?;
 			buf.clear();
