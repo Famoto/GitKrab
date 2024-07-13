@@ -1,4 +1,4 @@
-use std::{ffi::CStr, fs, io::BufReader};
+use std::{ffi::CStr, fs, io, io::BufReader};
 use std::io::{BufRead, Read, Write};
 
 use anyhow::Context;
@@ -51,16 +51,14 @@ fn main() -> anyhow::Result<()> {
 				".git/objects/{}/{}",
 				&object_hash[..2],
 				&object_hash[2..]
-			))
-				.context("open in .git/objects")?;
+			)).context("open in .git/objects")?;
 
 			let z = ZlibDecoder::new(f);
 			let mut z = BufReader::new(z);
 			let mut buf = Vec::new();
 			z.read_until(0, &mut buf).context("read header from .git/objects")?;
 
-			let header = CStr::from_bytes_with_nul(&buf)
-				.expect("know there is exactly one nul, and it's at the end");
+			let header = CStr::from_bytes_with_nul(&buf).expect("know there is exactly one nul, and it's at the end");
 
 			let header = header.to_str().context(".git/objects file header isn't valid UTF-8")?;
 
@@ -74,19 +72,17 @@ fn main() -> anyhow::Result<()> {
 				_ => anyhow::bail!("we do not yet know how to print a '{kind}'"),
 			};
 
+			let size = size.parse::<u64>().context(".git/objects file header has invalid size: {size}")?;
 
-			let size = size.parse::<usize>().context(".git/objects file header has invalid size: {size}")?;
-			buf.clear();
-			buf.resize(size, 0);
-			z.read_exact(&mut buf[..]).context("read true contents of .git/objects file")?;
+			let mut z = z.take(size);
 
-			let n = z.read(&mut [0]).context("validate EOF in .git/object file")?;
-			anyhow::ensure!(n == 0, ".git/object file had {n} trailing bytes");
-
-			let stdout = std::io::stdout();
-			let mut stdout = stdout.lock();
 			match kind {
-				Kind::Blob => stdout.write_all(&buf).context("write object contents to stdout")?,
+				Kind::Blob => {
+					let stdout = std::io::stdout();
+					let mut stdout = stdout.lock();
+					let n = std::io::copy(&mut z, &mut stdout).context("write .git/objects file to stdout")?;
+					anyhow::ensure!(n == size.try_into().unwrap(), ".git/object file was not the expected size (expected: {size}, actual: {n}");
+				}
 			}
 		}
 	}
