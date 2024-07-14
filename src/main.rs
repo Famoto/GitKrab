@@ -29,6 +29,7 @@ enum Command {
 		pretty_print: bool,
 		object_hash: String,
 	},
+    #[clap(name = "hash-object")]
 	HashObject {
 		#[clap(short = 'w')]
 		write: bool,
