@@ -23,19 +23,20 @@ struct Args {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-	Init,
-	CatFile {
-		#[clap(short = 'p')]
-		pretty_print: bool,
-		object_hash: String,
-	},
-    #[clap(name = "hash-object")]
-	HashObject {
-		#[clap(short = 'w')]
-		write: bool,
-		file: PathBuf
-	}
+    Init,
+    CatFile {
+        #[clap(short = 'p')]
+        pretty_print: bool,
+        object_hash: String,
+    },
+    #[command(name = "hash-object")]
+    HashObject {
+        #[clap(short = 'w')]
+        write: bool,
+        file: PathBuf,
+    },
 }
+
 
 enum Kind {
 	Blob,
@@ -150,7 +151,7 @@ struct HashWriter<W> {
 	hasher: Sha1,
 }
 
-impl<W> Write for HashWriter<W> where W: Write, {0
+impl<W> Write for HashWriter<W> where W: Write, {
 	fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
 		let n = self.writer.write(buf)?;
 		Update::update(&mut self.hasher, &buf[..n]);
